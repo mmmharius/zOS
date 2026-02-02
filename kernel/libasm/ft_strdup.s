@@ -9,7 +9,7 @@ ft_strdup:
     call ft_strlen
     inc rax
     mov rdi, rax
-    call malloc wrt ..plt        ; rax -> adresse de l'endroit malloc
+    call malloc wrt ..plt
     cmp rax, 0
     je .error
     mov rdi, rax
@@ -19,7 +19,7 @@ ft_strdup:
     
 .error:
     pop rdi
-    xor rax, rax        ; = mov rax, 0 mais coute 3oct au lieu de 7pour mov
+    xor rax, rax
     ret
 
 section .note.GNU-stack noalloc noexec nowrite progbits
