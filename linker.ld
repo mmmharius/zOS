@@ -4,9 +4,8 @@ ENTRY(_start)                   /* entry point (defined in boot.asm) */
 SECTIONS
 {
     . = 1M;                     /* kernel load at 1MB (GRUB requirement) */
-    
+    .multiboot : { *(.multiboot) }
     .text : {
-        *(.multiboot)           /* multiboot first (need to be in first 8mb) */
         *(.text)                /* code section */
     }
     
