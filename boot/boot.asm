@@ -18,10 +18,10 @@ align 4                     ; align to 4-byte boundary (multiboot requirement)
 
 section .text
 global _start               ; entry point visible to linker
-extern kernel_main          ; C function defined in kernel.c
+extern main                 ; extern = other file (kernel.c)
 
 _start:
     cli                     ; disable interrupts (no handlers yet)
-    call kernel_main        ; jump to C code
-    hlt                     ; halt CPU if kernel_main returns
+    call main               ; jump to C code
+    hlt                     ; halt CPU if main return (security)
     jmp _start              ; an infinite loop so we can see the result
