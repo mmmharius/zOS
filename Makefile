@@ -1,34 +1,40 @@
-ASM = nasm
-CC = gcc
-LD = ld
+ASM     = nasm
+CC      = gcc
+LD      = ld
 
 ASMFLAGS = -f elf32
-CFLAGS = -m32 -fno-builtin -fno-exceptions -fno-stack-protector -nostdlib -nodefaultlibs -Iinclude
-LDFLAGS = -m elf_i386 -T linker.ld
+CFLAGS   = -m32 -fno-builtin -fno-exceptions -fno-stack-protector -nostdlib -nodefaultlibs -Iinclude
+LDFLAGS  = -m elf_i386 -T linker.ld
+
+OBJDIR = obj
 
 all: kernel.bin
 
-boot.o: boot/boot.asm
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/boot.o: boot/boot.asm | $(OBJDIR)
 	$(ASM) $(ASMFLAGS) $< -o $@
 
-kernel.o: src/kernel.c
+$(OBJDIR)/kernel.o: src/kernel.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel.bin: boot.o kernel.o
-	$(LD) $(LDFLAGS) -o $@ boot.o kernel.o
+kernel.bin: $(OBJDIR)/boot.o $(OBJDIR)/kernel.o
+	$(LD) $(LDFLAGS) -o $@ $(OBJDIR)/boot.o $(OBJDIR)/kernel.o
 
 iso: kernel.bin
+	mv kernel.bin isodir/boot/
 	grub-mkrescue -o zOS.iso isodir
-	cp kernel.bin isodir/boot/
 
 run: iso
 	qemu-system-i386 -cdrom zOS.iso
 
 clean:
-	rm -f *.o kernel.bin
+	rm -rf $(OBJDIR)
+	rm -f isodir/boot/kernel.bin
 
 fclean: clean
-	rm -rf zOS.iso
+	rm -f zOS.iso
 
 re: fclean all
 

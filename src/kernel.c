@@ -1,4 +1,9 @@
 #include "kernel.h"
 
-void kernel_main() {
+void    print_42() {
+
+}
+
+void main() {
+    print_42();
 }
