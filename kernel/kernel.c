@@ -1,12 +1,34 @@
 #include "kernel.h"
 #include "libasm/libasm.h"
+#include <sys/io.h>
+
+int COL = 0;
+int LIN = 0;
 
 void    print_42() {
     volatile uint16_t* vga = (uint16_t*)0xB8000; // 0xB8000 -> VGA TEXT mode video memory address
 
-    vga[0] = (uint16_t)'4' | 0x0F00;  // each vga[i] is 2 bytes = 16 bits
-    vga[1] = (uint16_t)'2' | 0x0F00;
+    vga[LIN + COL * 80] = (uint16_t)'4' | 0x0F00;  // each vga[i] is 2 bytes = 16 bits
+    LIN++;
+    vga[LIN + COL * 80] = (uint16_t)'2' | 0x0F00;
+    LIN++;
 }
+
+unsigned char read_keyboard() {
+    while ((inb(KB_STATUS) & 1) == 0);
+        return inb(KB_DATA);
+}
+
+void    print_char(char c) {
+    volatile uint16_t* vga = (uint16_t*)0xB8000;
+    if (LIN == 80) {
+        COL++;
+        LIN = 0;
+    }
+    vga[LIN + COL * 80] = (uint16_t)c | 0x0F00;
+    LIN++;
+}
+
 
 /*
     vga[0] = (uint16_t)'4' | 0x0F00
@@ -33,5 +55,6 @@ void    print_42() {
 */
 
 void main() {
-    print_42();
+    // print_42();
+    print_char(read_keyboard());
 }
