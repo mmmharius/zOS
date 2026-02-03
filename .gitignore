@@ -2,4 +2,4 @@ kernel.bin
 obj/
 zOS.iso
 README.md
-include/color.h
+.vscode
