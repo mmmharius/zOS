@@ -5,7 +5,7 @@
 extern int ROW;
 extern int COL;
 
-int	ft_kputchar(int c);
+int	ft_kputchar(uint8_t c);
 int	ft_putstr(char *str);
 int ft_putptr(uint32_t addr);
 int	ft_putpercent(void);
