@@ -43,25 +43,23 @@ char    scancode_to_ascii(unsigned char sc) {
     }
 }
 
-void    handle_backspace() {
+void handle_backspace() {
     volatile uint16_t* vga = (uint16_t*)0xB8000;
 
     if (COL > 0) {
         COL--;
         vga[ROW * 80 + COL] = ' ' | 0x0F00;
-    } else if (ROW > 0) {
+    } 
+    else if (ROW > 0) {
         ROW--;
-        int last_col = 0;
-        char ch = 0; // kprintf
+        COL = 0;
         for (int col = 79; col >= 0; col--) {
-            ch = vga[ROW * 80 + col] & 0x00FF;
-            if (ch != 0) {
-                last_col = col; 
+            char ch = vga[ROW * 80 + col] & 0x00FF;
+            if (ch != ' ' && ch != 0) {
+                COL = col + 1;
                 break;
             }
         }
-        ft_printk("last ch = %c\n", ch);
-        COL = last_col;
     }
     move_cursor();
 }
