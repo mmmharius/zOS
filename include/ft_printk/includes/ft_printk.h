@@ -1,5 +1,5 @@
-#ifndef FT_KPRINTF_H
-# define FT_KPRINTF_H
+#ifndef FT_PRINTK_H
+# define FT_PRINTK_H
 #include "stdint.h"
 
 extern int ROW;
@@ -10,7 +10,7 @@ int	ft_putstr(char *str);
 int ft_putptr(uint32_t addr);
 int	ft_putpercent(void);
 int	ft_formats(uint32_t* args, const char format);
-int	ft_printf(const char *str, ...);
+int	ft_printk(const char *str, ...);
 int	ft_puthex(unsigned int num, char format);
 int	ft_putnbr(int n);
 int	ft_putnsigned(unsigned int n);

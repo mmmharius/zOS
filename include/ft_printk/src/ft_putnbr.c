@@ -1,5 +1,4 @@
-
-#include "ft_kprintf.h"
+#include "ft_printk.h"
 
 int	ft_putnbr(int n) {
 	int	nb_caracter;
