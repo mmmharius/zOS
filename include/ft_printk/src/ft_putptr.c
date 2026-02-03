@@ -1,5 +1,4 @@
-
-#include "ft_kprintf.h"
+#include "ft_printk.h"
 
 int	ft_putptr(uint32_t addr) {
 	ft_putstr("0x");

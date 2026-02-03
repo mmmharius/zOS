@@ -2,7 +2,7 @@
 #include "screen.h"
 #include "stdint.h"
 #include "io.h"
-#include "ft_kprintf.h"
+#include "ft_printk.h"
 
 unsigned char read_keyboard() {
     while ((inb(KB_STATUS) & 1) == 0);
@@ -60,7 +60,7 @@ void    handle_backspace() {
                 break;
             }
         }
-        ft_kprintf("last ch = %c\n", ch);
+        ft_printk("last ch = %c\n", ch);
         COL = last_col;
     }
     move_cursor();

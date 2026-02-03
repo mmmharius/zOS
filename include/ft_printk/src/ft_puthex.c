@@ -1,5 +1,4 @@
-
-#include "ft_kprintf.h"
+#include "ft_printk.h"
 
 int	ft_puthex(unsigned int num, char format) {
 	int		nb_caracter;

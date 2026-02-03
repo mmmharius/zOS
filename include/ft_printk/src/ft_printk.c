@@ -1,4 +1,4 @@
-#include "ft_kprintf.h"
+#include "ft_printk.h"
 
 int	ft_kputchar(int c) {
 	volatile uint16_t* vga = (uint16_t*)0xB8000;
@@ -50,7 +50,7 @@ int	ft_formats(uint32_t* args, const char format) {
 	return nb_caracter;
 }
 
-int	ft_kprintf(const char *str, ...) {
+int	ft_printk(const char *str, ...) {
 	uint32_t* args = (uint32_t*)(&str + 1);
 	int nb_caracter = 0;
 
