@@ -10,7 +10,10 @@ int ROW = 0;
 
 void    main() {
     // print_42();
-    // keyboard_loop();
+    int c = 12;
     ft_printk("Hello from ft_kprintf!\n");
+    ft_printk("Teste : %d", c);
+    move_cursor();
+    keyboard_loop();
     while(1);
 }

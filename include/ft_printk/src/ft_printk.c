@@ -1,6 +1,6 @@
 #include "ft_printk.h"
 
-int	ft_kputchar(int c) {
+int	ft_kputchar(uint8_t c) {
 	volatile uint16_t* vga = (uint16_t*)0xB8000;
 	
 	vga[ROW * 80 + COL] = (uint16_t)c | 0x0F00;
