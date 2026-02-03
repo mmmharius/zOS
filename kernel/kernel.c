@@ -12,6 +12,17 @@ unsigned char read_keyboard() {
     return inb(KB_DATA);
 }
 
+void    check_col() {
+    if (COL >= 80) {
+        COL = 0;
+        ROW++;
+    }
+    // if (ROW >= 25) {
+    //     //scrol ???
+    // }
+}
+
+
 void move_cursor()
 {
     uint16_t pos = ROW * 80 + COL;
@@ -24,10 +35,6 @@ void move_cursor()
 }
 
 
-void    print_42() {
-    print_char('4');
-    print_char('2');
-}
 
 char    scancode_to_ascii(unsigned char sc) {
     switch(sc) {
@@ -65,18 +72,28 @@ char    scancode_to_ascii(unsigned char sc) {
 
 void    print_char(char c) {
     volatile uint16_t* vga = (uint16_t*)0xB8000; // 0xB8000 -> VGA TEXT mode video memory address
-    if (COL == 80) {
-        ROW++;
-        COL = 0;
-    }
+    check_col();
     vga[COL + ROW * 80] = (uint16_t)c | 0x0F00;
     COL++;
     move_cursor();
 }
 
-void    print_keyboard(char c) {
-
+void    print_42() {
+    print_char('4');
+    print_char('2');
 }
+
+
+void    print_keyboard(char c) {
+    if (c == '\n') {
+        COL = 0;
+        ROW++;
+    }
+    else
+        print_char(c);
+    move_cursor();
+}
+
 
 void    keyboard_loop() {
     while(1) {
@@ -84,8 +101,7 @@ void    keyboard_loop() {
         if (sc & 0x80)      // keyboard relased catch
             continue;
         char c = scancode_to_ascii(sc);
-        print_char(c);
-        // print_keyboard(c);
+        print_keyboard(c);
     }
 }
 
