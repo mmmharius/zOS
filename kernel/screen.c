@@ -38,7 +38,7 @@ void    check_col() {
         COL = 0;
         ROW++;
     }
-    if (ROW >= 25)
+    if (ROW >= VGA_HEIGHT)
         scroll();
 }
 
