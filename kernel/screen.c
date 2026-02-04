@@ -1,10 +1,9 @@
-#include "screen.h"
-#include "stdint.h"
-#include "keyboard.h"
-#include "kernel.h"
-#include "io.h"
-#include "printk.h"
-#include "color.h"
+#include <keyboard.h>
+#include <screen.h>
+#include <stdint.h>
+#include <io.h>
+#include <printk.h>
+#include <color.h>
 
 void replace_entire_row(int row, char c)
 {

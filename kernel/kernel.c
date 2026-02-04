@@ -1,7 +1,6 @@
-#include "kernel.h"
-#include "keyboard.h"
-#include "screen.h"
-#include "printk.h"
+#include <keyboard.h>
+#include <screen.h>
+#include <printk.h>
 
 int COL = 0;
 int ROW = 0;

@@ -1,6 +1,4 @@
-#include "printk.h"
-#include "../../screen.h"
-#include "../../io.h"
+#include <printk.h>
 
 int	ft_kputchar(uint8_t c, int output) {
 	if (output == SERIAL) {
@@ -16,7 +14,7 @@ int	ft_kputchar(uint8_t c, int output) {
 		check_col();
 	}
 	else {
-		vga[ROW * 80 + COL] = (uint16_t)c | 0x0F00;
+		vga[ROW * 80 + COL] = (uint16_t)c | VGA_DEFAULT_COLOR;
 		COL++;
 		check_col();
 	}
