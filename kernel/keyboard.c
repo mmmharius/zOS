@@ -1,9 +1,9 @@
-#include "keyboard.h"
-#include "screen.h"
-#include "stdint.h"
-#include "io.h"
-#include "printk.h"
-#include "color.h"
+#include <keyboard.h>
+#include <screen.h>
+#include <stdint.h>
+#include <io.h>
+#include <printk.h>
+#include <color.h>
 
 unsigned char read_keyboard() {
     while ((inb(KB_STATUS) & 1) == 0);

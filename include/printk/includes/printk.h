@@ -1,11 +1,16 @@
 #ifndef PRINTK_H
 #define PRINTK_H
-#include "stdint.h"
+
+#include <color.h>
+#include <io.h>
+#include <screen.h>
+#include <stdint.h>
 
 #define COM1 0x3F8
 
 extern int ROW;
 extern int COL;
+
 
 #define VGA 0
 #define SERIAL 1
