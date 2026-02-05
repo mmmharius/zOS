@@ -4,10 +4,12 @@
 #include <io.h>
 #include <printk.h>
 #include <color.h>
+#ifdef DEBUG
+    #include "debug.h"
+#endif
 
 void replace_entire_row(int row, char c)
 {
-    printk(1, "REPLACE CALL ROW : %d", row);
     volatile uint16_t *vga = (uint16_t *)VGA_ADDR;
 
     for (int col = 0; col < VGA_WIDTH; col++) {
@@ -17,7 +19,6 @@ void replace_entire_row(int row, char c)
 }
 
 void    scroll() {
-    printk(1, "SCROLL CALL");
     volatile uint16_t *vga = (uint16_t *)VGA_ADDR;
 
     for (int row = START_PRINT + 1; row < VGA_HEIGHT; row++) {
@@ -27,14 +28,10 @@ void    scroll() {
     }
     current->row = VGA_HEIGHT - 1;
     current->col = 0;
-    printk(1, "row before call replace:%d\n", current->row);
     replace_entire_row(current->row, ' ');
-    printk(1, "row after call replace:%d\n", current->row);
 }
 
 void    check_col() {
-    int current_id = current - screens;
-    printk(1, "CHECK CALL START\n COL: %d ROW: %d SCREEN:%d, current id:%d\n", current->col, current->row, SCREEN, current_id);
     if (current->col >= VGA_WIDTH) {
         current->col = 0;
         current->row++;
