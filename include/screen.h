@@ -10,19 +10,20 @@
 #define SCREEN_LENGHT 1
 
 extern int SCREEN;
+extern int HALF_SCREEN;
 
 typedef struct s_screen {
     uint16_t buffer[VGA_WIDTH * (VGA_HEIGHT * SCREEN_LENGHT)];
     int row;
     int col;
-    // int row_max;
-    // int col_max;
-    // int row_start;
-    // int row_start;
+    int row_max;
+    int col_max;
+    int row_start;
+    int col_start;
     int scroll;
 } t_screen;
 
-extern t_screen screens[NB_SCREEN];
+extern t_screen screens[NB_SCREEN + 1];
 extern t_screen *current;
 
 void    replace_entire_row(int row, char c);
@@ -32,5 +33,6 @@ void    print_42();
 void    move_cursor();
 void    init_screen();
 void    switch_screen(int id);
+void    half_screen();
 
 #endif

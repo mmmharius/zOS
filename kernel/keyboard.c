@@ -15,6 +15,7 @@ unsigned char read_keyboard() {
 
 char    scancode_to_ascii(unsigned char sc) {
     switch(sc) {
+        case KEY_1: return '1';
         case KEY_Q: return 'Q';
         case KEY_W: return 'W';
         case KEY_E: return 'E';
@@ -43,7 +44,6 @@ char    scancode_to_ascii(unsigned char sc) {
         case KEY_M: return 'M';
         case KEY_ENTER: return '\n';
         case KEY_BACKSPACE: return '\b';
-        case KEY_SHIFT: return '1';
         case KEY_SPACE: return ' ';
         default: return '?';
     }
@@ -100,6 +100,8 @@ void    keyboard_loop() {
             switch_screen((current - screens + 1) % NB_SCREEN);
             continue;
         }
+        else if (key == KEY_1)
+            half_screen();
         else {
             char c = scancode_to_ascii(sc);
             print_keyboard(c);
