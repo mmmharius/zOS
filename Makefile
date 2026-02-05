@@ -1,22 +1,32 @@
 ASM     = nasm
 CC      = gcc
 LD      = ld
-
 ASMFLAGS = -f elf32
 CFLAGS   = -Wall -Wextra -Werror -m32 -fno-builtin -fno-stack-protector -nostdlib -nodefaultlibs -Iinclude -Iinclude/printk/includes
 LDFLAGS  = -m elf_i386 -T linker.ld
-
 OBJ_DIR = obj
 LIBASM_DIR = include/libasm
 LIBASM = $(LIBASM_DIR)/libasm.a
-
-SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen.c
-OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
-
 PRINTK_DIR = include/printk
 PRINTK_LIB = $(PRINTK_DIR)/printk.a
 
+# Sources normales
+SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen.c
+OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
+
+# Pour le mode debug, on ajoute debug.c
+DEBUG_SRCS = $(SRCS) kernel/debug.c
+DEBUG_OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(DEBUG_SRCS))
+
 all: kernel.bin
+
+# Règle debug qui utilise DEBUG_OBJS au lieu de OBJS
+debug: CFLAGS += -DDEBUG
+debug: $(OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM)
+	$(LD) $(LDFLAGS) -o kernel.bin $(OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM)
+	mv kernel.bin isodir/boot/
+	grub-mkrescue -o zOS.iso isodir
+	qemu-system-i386 -cdrom zOS.iso -serial stdio
 
 $(PRINTK_LIB): FORCE
 	$(MAKE) -C $(PRINTK_DIR)
@@ -59,4 +69,4 @@ re: fclean all
 
 FORCE:
 
-.PHONY: all iso run clean fclean re FORCE
+.PHONY: all debug iso run clean fclean re FORCE

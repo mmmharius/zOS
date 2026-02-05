@@ -4,6 +4,9 @@
 #include <io.h>
 #include <printk.h>
 #include <color.h>
+#ifdef DEBUG
+    #include "debug.h"
+#endif
 
 unsigned char read_keyboard() {
     while ((inb(KB_STATUS) & 1) == 0);
@@ -69,10 +72,8 @@ void    print_keyboard(char c) {
     if (c == '\n') {
         current->col = 0;
         current->row++;
-        printk(1, "ROW before space : %d\n", current->row);
         check_col();
         move_cursor();
-        printk(1, "ROW adter space : %d\n", current->row);
     }
     else if (c == '\b') {
         handle_backspace();
@@ -80,6 +81,10 @@ void    print_keyboard(char c) {
     else
         print_char(c);
     move_cursor();
+    #ifdef DEBUG
+        int id = current - screens;
+        printk(1, "STRUCT\nscreen:%d\nstart_print:%d\nrow:%d\ncol:%d\nscroll:%d\n\n\n", id, START_PRINT, current->row, current->col, current->scroll);
+    #endif
 }
 
 void    keyboard_loop() {
