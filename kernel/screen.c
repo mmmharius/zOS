@@ -4,6 +4,7 @@
 #include <io.h>
 #include <printk.h>
 #include <color.h>
+#include <init.h>
 #ifdef DEBUG
     #include "debug.h"
 #endif
@@ -54,36 +55,21 @@ void    print_42() {
     print_char('2');
 }
 
+void cursor_for_half() {
+    if (current == &screens[0]) {
+        int linear_pos = current->row * VGA_WIDTH + current->col;
 
-void    move_cursor() {
-    uint16_t pos = current->row * VGA_WIDTH + current->col;
-    
-    outb(0x3D4, 0x0F); // 0x0F  = cursor low byte
-    // 0x3D4 = choose register | 
-    outb(0x3D5, (uint8_t)(pos & 0xFF)); 
-    outb(0x3D4, 0x0E);  // 0x0E  = cursor high byte
-    outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
-}
+        current->row = linear_pos / (VGA_WIDTH / 2);
+        current->col = linear_pos % (VGA_WIDTH / 2);
+    }
+    else if (current == &screens[1]) {
+        int linear_pos = current->row * VGA_WIDTH + current->col;
 
-void    load_screen() {
-    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
-    for (int row = 0; row < VGA_HEIGHT; row++) {
-        for (int col = 0; col < VGA_WIDTH; col++) {
-            uint16_t c = current->buffer[(row * VGA_WIDTH) + col];
-            vga[col + row * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
-        }
+        current->row = linear_pos / (VGA_WIDTH / 2);
+        current->col = linear_pos % (VGA_WIDTH / 2);
     }
 }
 
-void load_half() {
-    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
-    for (int row = 0; row < VGA_HEIGHT; row++) {
-        for (int col = 0; col < VGA_WIDTH; col++) {
-            uint16_t c = current->buffer[(row * VGA_WIDTH) + col];
-            vga[col + row * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
-        }
-    }
-}
 
 void    switch_screen(int id) {
 #ifdef DEBUG
@@ -99,14 +85,15 @@ void    switch_screen(int id) {
 void    half_screen() {
     screens[0].col_max = VGA_WIDTH / 2;
     screens[1].col_start = VGA_WIDTH / 2;
+    cursor_for_half();
+    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
     HALF_SCREEN = 1;
     for (int row = 0; row < VGA_HEIGHT; row++) {
         for (int col = 0; col < VGA_WIDTH / 2; col++) {
-            screens[NB_SCREEN].buffer[row * VGA_WIDTH + col] = screens[0].buffer[row * VGA_WIDTH + col];
+            vga[row * VGA_WIDTH + col] = screens[0].buffer[row * VGA_WIDTH + col] | VGA_DEFAULT_COLOR;
         }
-        for (int col = VGA_WIDTH / 2; col < VGA_WIDTH; col++) {
-            int screen1_col = col - VGA_WIDTH / 2;
-            screens[NB_SCREEN].buffer[row * VGA_WIDTH + col] = screens[1].buffer[row * VGA_WIDTH + screen1_col];
+        for (int col = 0; col < VGA_WIDTH / 2; col++) {
+            vga[row * VGA_WIDTH + (col + VGA_WIDTH / 2)] = screens[1].buffer[row * VGA_WIDTH + col] | VGA_DEFAULT_COLOR;
         }
     }
     current = &screens[NB_SCREEN];

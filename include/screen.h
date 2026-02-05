@@ -30,8 +30,6 @@ void    replace_entire_row(int row, char c);
 void    check_col();
 void    print_char(char c);
 void    print_42();
-void    move_cursor();
-void    init_screen();
 void    switch_screen(int id);
 void    half_screen();
 
