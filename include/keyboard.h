@@ -36,6 +36,7 @@
 #define KEY_M 0x32
 #define KEY_RELEASE 0x80
 #define KEY_SPACE 0x39
+#define KEY_1 0x02
 
 unsigned char   read_keyboard();
 char            scancode_to_ascii(unsigned char sc);

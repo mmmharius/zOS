@@ -55,7 +55,7 @@ void    print_42() {
 }
 
 
-void move_cursor() {
+void    move_cursor() {
     uint16_t pos = current->row * VGA_WIDTH + current->col;
     
     outb(0x3D4, 0x0F); // 0x0F  = cursor low byte
@@ -65,20 +65,7 @@ void move_cursor() {
     outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
 
-void init_screen() {
-    for (int i = 0; i <= (NB_SCREEN - 1); i++) {
-        printk(1, "%d, %d", i, (NB_SCREEN - 1));
-        screens[i].row = 0;
-        screens[i].col = 0;
-        screens[i].scroll = 0;
-
-        for (int j = START_PRINT; j < VGA_WIDTH * (VGA_HEIGHT * SCREEN_LENGHT); j++)
-            screens[i].buffer[j] = (uint16_t)' ' | VGA_DEFAULT_COLOR;
-    }
-    current = &screens[0];
-}
-
-void load_screen() {
+void    load_screen() {
     volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
     for (int row = 0; row < VGA_HEIGHT; row++) {
         for (int col = 0; col < VGA_WIDTH; col++) {
@@ -88,7 +75,17 @@ void load_screen() {
     }
 }
 
-void switch_screen(int id) {
+void load_half() {
+    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
+    for (int row = 0; row < VGA_HEIGHT; row++) {
+        for (int col = 0; col < VGA_WIDTH; col++) {
+            uint16_t c = current->buffer[(row * VGA_WIDTH) + col];
+            vga[col + row * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
+        }
+    }
+}
+
+void    switch_screen(int id) {
 #ifdef DEBUG
     printk(1, "switching to screen %d\n", id);
 #endif
@@ -97,6 +94,23 @@ void switch_screen(int id) {
     current = &screens[id];
     load_screen();
     move_cursor();
+}
+
+void    half_screen() {
+    screens[0].col_max = VGA_WIDTH / 2;
+    screens[1].col_start = VGA_WIDTH / 2;
+    HALF_SCREEN = 1;
+    for (int row = 0; row < VGA_HEIGHT; row++) {
+        for (int col = 0; col < VGA_WIDTH / 2; col++) {
+            screens[NB_SCREEN].buffer[row * VGA_WIDTH + col] = screens[0].buffer[row * VGA_WIDTH + col];
+        }
+        for (int col = VGA_WIDTH / 2; col < VGA_WIDTH; col++) {
+            int screen1_col = col - VGA_WIDTH / 2;
+            screens[NB_SCREEN].buffer[row * VGA_WIDTH + col] = screens[1].buffer[row * VGA_WIDTH + screen1_col];
+        }
+    }
+    current = &screens[NB_SCREEN];
+    load_half();
 }
 
 /* 

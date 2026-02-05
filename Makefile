@@ -10,17 +10,14 @@ LIBASM = $(LIBASM_DIR)/libasm.a
 PRINTK_DIR = include/printk
 PRINTK_LIB = $(PRINTK_DIR)/printk.a
 
-# Sources normales
-SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen.c
+SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen.c kernel/init.c
 OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 
-# Pour le mode debug, on ajoute debug.c
 DEBUG_SRCS = $(SRCS) kernel/debug.c
 DEBUG_OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(DEBUG_SRCS))
 
 all: kernel.bin
 
-# Règle debug qui utilise DEBUG_OBJS au lieu de OBJS
 debug: CFLAGS += -DDEBUG
 debug: $(OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM)
 	$(LD) $(LDFLAGS) -o kernel.bin $(OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM)
