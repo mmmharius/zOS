@@ -40,8 +40,6 @@
 
 unsigned char   read_keyboard();
 char            scancode_to_ascii(unsigned char sc);
-void            handle_backspace();
-void            print_keyboard(char c);
 void            keyboard_loop();
 
 #endif

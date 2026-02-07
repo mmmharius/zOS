@@ -3,22 +3,12 @@
 int	ft_kputchar(uint8_t c, int output) {
 	if (output == SERIAL) {
 		while ((inb(COM1 + 5) & 0x20) == 0);
-    		outb(COM1, c);
-			return 1;
-		}
-		volatile uint16_t* vga = (uint16_t*)0xB8000;
-		
-		if (c == '\n') {
-			current->col = current->col_start;
-			current->row++;
-			check_col();
-		}
-	else {
-		vga[current->row * VGA_WIDTH + current->col] = (uint16_t)c | VGA_DEFAULT_COLOR;
-		current->buffer[current->row * VGA_WIDTH + current->col] = c;
-		current->col++;
-		check_col();
+		outb(COM1, c);
+		return 1;
 	}
+	
+	extern void screen_putchar(char c);
+	screen_putchar(c);
 	return 1;
 }
 

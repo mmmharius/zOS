@@ -2,6 +2,7 @@
 #include <screen.h>
 #include <printk.h>
 #include <init.h>
+
 #ifdef DEBUG
     #include "debug.h"
 #endif
@@ -26,8 +27,6 @@ int main() {
     printk(0, "ZZZZZ   OOO   SSSSS\n");
     
 #endif
-    
-    move_cursor();
     keyboard_loop();
     while(1);
     return 1;

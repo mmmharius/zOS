@@ -2,38 +2,28 @@
 #define SCREEN_H
 
 #include <stdint.h>
-#define VGA_ADDR 0xB8000
+
+#define VGA_ADDR 0xB8000  // 0xB8000 -> VGA TEXT mode video memory address
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 #define NB_SCREEN 2
-#define SCREEN_LENGHT 1
 
-extern int SCREEN;
-extern int HALF_SCREEN;
-
-typedef struct s_screen {
-    uint16_t buffer[VGA_WIDTH * (VGA_HEIGHT * SCREEN_LENGHT)];
+typedef struct {
+    char buffer[VGA_WIDTH * VGA_HEIGHT];
     int row;
     int col;
-    int row_half;
-    int col_half;
-    int row_max;
-    int col_max;
-    int row_start;
-    int col_start;
-    int scroll;
-} t_screen;
+    int start_row;
+} screen_t;
 
-extern t_screen screens[NB_SCREEN];
-extern t_screen *current;
+extern screen_t screens[NB_SCREEN];
+extern int current_screen;
+extern int mode_split;
 
-void    replace_entire_row(int row, char c);
-void    check_col();
-void    print_char(char c);
-void    print_42();
-void    switch_screen(int id);
-void    half_screen();
-void    cursor_for_half();
-
+void    screen_init();
+void    screen_switch(int id);
+void    screen_toggle_split();
+void    screen_putchar(char c);
+void    screen_backspace();
+void    screen_refresh();
 
 #endif

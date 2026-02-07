@@ -2,19 +2,13 @@
 #include <screen.h>
 #include <stdint.h>
 #include <io.h>
-#include <printk.h>
-#include <color.h>
-#include <init.h>
-#ifdef DEBUG
-    #include "debug.h"
-#endif
 
 unsigned char read_keyboard() {
     while ((inb(KB_STATUS) & 1) == 0);
     return inb(KB_DATA);
 }
 
-char    scancode_to_ascii(unsigned char sc) {
+char scancode_to_ascii(unsigned char sc) {
     switch(sc) {
         case KEY_1: return '1';
         case KEY_Q: return 'Q';
@@ -46,107 +40,34 @@ char    scancode_to_ascii(unsigned char sc) {
         case KEY_ENTER: return '\n';
         case KEY_BACKSPACE: return '\b';
         case KEY_SPACE: return ' ';
-        default: return '?';
+        default: return 0;
     }
 }
 
-void    handle_backslach() { 
-    current->buffer[current->row * VGA_WIDTH + current->col] = '\n';
-    current->col = current->col_start;
-    current->row++;
-    check_col();
-    move_cursor();
-}
-
-void    handle_half_backspace() {
-    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
-
-    if (current->col_half + current->col_start > current->col_start) {
-        current->col_half--;
-        current->col--;
-        vga[current->row_half * VGA_WIDTH + (current->col_half + current->col_start)] = ' ' | VGA_DEFAULT_COLOR;
-        current->buffer[current->row * VGA_WIDTH + current->col] = ' ';
-        #ifdef DEBUG
-            printk(1, "here\n");
-        #endif
-    }
-    else if (current->row_half > current->row_start) {
-        current->row--;
-        current->col = current->col_start;
-        for (int col = 79; col >= 0; col--) {
-            char ch = vga[current->row * VGA_WIDTH + col] & 0x00FF;
-            if (ch != ' ' && ch != 0) {
-                current->col = col + 1;
-                break;
-            }
-        }
-    }
-    move_cursor();
-}
-
-void handle_backspace() {
-    if (HALF_SCREEN)
-        return handle_half_backspace();
-    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
-
-    if (current->col > 0) {
-        current->col--;
-        vga[current->row * VGA_WIDTH + current->col] = ' ' | VGA_DEFAULT_COLOR;
-        current->buffer[current->row * VGA_WIDTH + current->col] = ' ';
-    } 
-    else if (current->row > current->row_start) {
-        current->row--;
-        current->col = current->col_start;
-        for (int col = 79; col >= 0; col--) {
-            char ch = vga[current->row * VGA_WIDTH + col] & 0x00FF;
-            if (ch != ' ' && ch != 0) {
-                current->col = col + 1;
-                break;
-            }
-        }
-    }
-    move_cursor();
-}
-
-void    print_keyboard(char c) {
-    #ifdef DEBUG
-        printk(1, "print_keyboard call\n");
-    #endif
-    if (c == '\n')
-        handle_backslach();
-    else if (c == '\b')
-        handle_backspace();
-    else
-        print_char(c);
-    move_cursor();
-    // #ifdef DEBUG
-    //     int id = current - screens;
-    //     printk(1, "STRUCT\nscreen:%d\nstart_print:%d\nrow:%d\ncol:%d\nscroll:%d\n\n\n", id, current->row_start, current->row, current->col, current->scroll);
-    // #endif
-}
-
-void    keyboard_loop() {
+void keyboard_loop() {
     while(1) {
         unsigned char sc = read_keyboard();
         unsigned char key = sc & 0x7F;
-        if (sc & KEY_RELEASE) {
+        
+        if (sc & KEY_RELEASE)
+            continue;
+        
+        if (key == KEY_TAB) {
+            screen_switch((current_screen + 1) % NB_SCREEN);
             continue;
         }
-        else if (key == KEY_TAB) {
-            switch_screen((current - screens + 1) % NB_SCREEN);
-        // #ifdef DEBUG
-        //     print_current_struct();
-        // #endif
+        
+        if (key == KEY_1) {
+            screen_toggle_split();
             continue;
         }
-        else if (key == KEY_1) {
-            half_screen();
-        #ifdef DEBUG
-            print_current_struct();
-        #endif
-            continue;
-        }
+        
         char c = scancode_to_ascii(sc);
-        print_keyboard(c);
+        if (c == 0) 
+            continue;
+        if (c == '\b')
+            screen_backspace();
+        else
+            screen_putchar(c);
     }
 }
