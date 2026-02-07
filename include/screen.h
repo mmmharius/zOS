@@ -6,7 +6,6 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 #define NB_SCREEN 2
-#define START_PRINT 5
 #define SCREEN_LENGHT 1
 
 extern int SCREEN;

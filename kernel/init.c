@@ -24,11 +24,14 @@ void    init_screen() {
         screens[i].scroll = 0;
         screens[i].row_max = VGA_HEIGHT;
         screens[i].col_max = VGA_WIDTH;
-        screens[i].row_start = 0;
+        if (i == 0)
+            screens[i].row_start = 5;
+        else
+            screens[i].row_start = 0;
         screens[i].col_start = 0;
         screens[i].row_half = 0;
         screens[i].col_half = 0;
-        for (int j = START_PRINT; j < VGA_WIDTH * (VGA_HEIGHT * SCREEN_LENGHT); j++)
+        for (int j = current->row_start; j < VGA_WIDTH * (VGA_HEIGHT * SCREEN_LENGHT); j++)
             screens[i].buffer[j] = (uint16_t)' ' | VGA_DEFAULT_COLOR;
     }
     current = &screens[0];
@@ -39,7 +42,7 @@ void    init() {
 }
 
 void    move_cursor_half() {
-    uint16_t pos = (current->row_half + current->row_start) * VGA_WIDTH + (current->col_half + current->col_start);
+    uint16_t pos = current->row_half * VGA_WIDTH + (current->col_half + current->col_start);
     #ifdef DEBUG
         printk(1, "row_half:%d col_half:%d\n", current->row_half, current->col_half);
     #endif
