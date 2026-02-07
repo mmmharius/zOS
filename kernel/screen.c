@@ -19,10 +19,44 @@ void replace_entire_row(int row, char c)
     }
 }
 
+void scroll_half() {
+    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
+
+    int start_col = current->col_start;
+    int end_col   = current->col_start + current->col_max;
+
+    for (int row = current->row_start + 1; row < VGA_HEIGHT; row++) {
+        for (int col = start_col; col < end_col; col++) {
+            current->buffer[(row - 1) * VGA_WIDTH + col] =
+                current->buffer[row * VGA_WIDTH + col];
+        }
+    }
+    for (int col = start_col; col < end_col; col++) {
+        current->buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + col] = ' ';
+    }
+
+    for (int row = current->row_start; row < VGA_HEIGHT; row++) {
+        for (int col = start_col; col < end_col; col++) {
+            vga[row * VGA_WIDTH + col] =
+                current->buffer[row * VGA_WIDTH + col] | VGA_DEFAULT_COLOR;
+        }
+    }
+
+    current->row = VGA_HEIGHT - 1;
+    current->col = start_col;
+    current->row_half = VGA_HEIGHT - 1;
+    current->col_half = current->col_start;
+
+    move_cursor();
+}
+
+
 void    scroll() {
+    if (HALF_SCREEN)
+        return scroll_half();
     volatile uint16_t *vga = (uint16_t *)VGA_ADDR;
 
-    for (int row = START_PRINT + 1; row < VGA_HEIGHT; row++) {
+    for (int row = current->row_start + 1; row < VGA_HEIGHT; row++) {
         for (int col = 0; col < VGA_WIDTH; col++) {
             vga[(row - 1) * VGA_WIDTH + col] = vga[row * VGA_WIDTH + col];
         }
@@ -33,29 +67,41 @@ void    scroll() {
 }
 
 void    check_col() {
-    if (current->col >= current->col_max) {
-        current->col = current->col_start;
-        current->row++;
+    if (HALF_SCREEN) {
+        if ((current->col_half + current->col_start) >= current->col_max) {
+            current->col = current->col_start;
+            current->col_half = current->col_start;
+            current->row++;
+            current->row_half++;
+        }
+        else if ((current->row_half + current->row_start) >= current->row_max)
+            scroll();
     }
-    if (current->row >= current->row_max)
-        scroll();
+    else {
+        if (current->col >= current->col_max) {
+            current->col = current->col_start;
+            current->row++;
+        }
+        if (current->row >= current->row_max )
+            scroll();
+    }
 }
 
 void    print_char(char c) {
     volatile uint16_t* vga = (uint16_t*)VGA_ADDR; // 0xB8000 -> VGA TEXT mode video memory address
+    check_col();
     if (HALF_SCREEN){
-        vga[(current->col_half + current->col_start) + (current->row_half + current->row_start) * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
+        vga[(current->col_half + current->col_start) + current->row_half * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
         current->buffer[current->row * VGA_WIDTH + current->col] = c;
         current->col_half++;
         current->col++;
-        check_col();
     }
     else {
         vga[current->col + current->row * VGA_WIDTH] = (uint16_t)c | VGA_DEFAULT_COLOR;
         current->buffer[current->row * VGA_WIDTH + current->col] = c;
         current->col++;
-        check_col();
     }
+    check_col();
     move_cursor();
 }
 
@@ -76,48 +122,113 @@ void    switch_screen(int id) {
         half_screen();
         return;
     }
-    #ifdef DEBUG
-        printk(1, "\n\n%d\n\n", id);
-    #endif
+    // #ifdef DEBUG
+    //     printk(1, "\n\n%d\n\n", id);
+    // #endif
     load_screen();
     move_cursor();
 }
 
-void    half_screen() {
-    screens[0].col_max = VGA_WIDTH / 2;
-    screens[1].col_start = VGA_WIDTH / 2;
+// void    half_screen() {
+//     screens[0].col_max = VGA_WIDTH / 2;
+//     screens[1].col_start = VGA_WIDTH / 2;
+//     volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
+//     if (HALF_SCREEN == 1) {
+//         HALF_SCREEN = 0;
+//         load_screen();
+//         return;
+//     }
+//     HALF_SCREEN = 1;
+//     int buffer_index = 0;
+    
+//     for (int vga_row = 0; vga_row < VGA_HEIGHT; vga_row++) {
+//         for (int col = 0; col < VGA_WIDTH / 2; col++) {
+//             vga[vga_row * VGA_WIDTH + col] = screens[0].buffer[buffer_index + col] | VGA_DEFAULT_COLOR;
+//             if (current == &screens[0]) {
+//                 int cursor_linear = current->row * VGA_WIDTH + current->col;
+//                 if ((buffer_index + col) == cursor_linear) {
+//                     screens[0].row_half = vga_row;
+//                     screens[0].col_half = col;
+//                 }
+//             }
+//         }
+//         for (int col = 0; col < VGA_WIDTH / 2; col++) {
+//             vga[vga_row * VGA_WIDTH + (col + VGA_WIDTH / 2)] = screens[1].buffer[buffer_index + col] | VGA_DEFAULT_COLOR;
+//             if (current == &screens[1]) {
+//                 int cursor_linear = current->row * VGA_WIDTH + current->col;
+//                 if ((buffer_index + col) == cursor_linear) {
+//                     screens[1].row_half = vga_row;
+//                     screens[1].col_half = col;
+//                 }
+//             }
+//         }
+//         buffer_index += VGA_WIDTH / 2;
+//     }
+//     move_cursor();
+// }
+void half_screen() {
     volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
-    if (HALF_SCREEN == 1) {
+
+    screens[0].col_start = 0;
+    screens[0].col_max   = VGA_WIDTH / 2;
+    screens[1].col_start = VGA_WIDTH / 2;
+    screens[1].col_max   = VGA_WIDTH / 2;
+
+    if (HALF_SCREEN) {
         HALF_SCREEN = 0;
         load_screen();
         return;
     }
+
     HALF_SCREEN = 1;
-    int buffer_index = 0;
-    
-    for (int vga_row = 0; vga_row < VGA_HEIGHT; vga_row++) {
-        for (int col = 0; col < VGA_WIDTH / 2; col++) {
-            vga[vga_row * VGA_WIDTH + col] = screens[0].buffer[buffer_index + col] | VGA_DEFAULT_COLOR;
-            if (current == &screens[0]) {
-                int cursor_linear = current->row * VGA_WIDTH + current->col;
-                if ((buffer_index + col) == cursor_linear) {
-                    screens[0].row_half = vga_row;
-                    screens[0].col_half = col;
+
+    for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+        vga[i] = ' ' | VGA_DEFAULT_COLOR;
+
+    for (int s = 0; s < 2; s++) {
+        t_screen* scr = &screens[s];
+
+        int r = scr->row_start;
+        int c = 0;
+
+        for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+            char ch = scr->buffer[i];
+
+            if (ch == '\0')
+                break;
+            if (ch == '\n') {
+                r++;
+                c = 0;
+                while (i + 1 < VGA_WIDTH * VGA_HEIGHT) {
+                    char next = scr->buffer[i + 1];
+                    if (next != ' ' && next != '\n')
+                        break;
+                    i++;
+                    if (next == '\n') {
+                        r++;
+                        c = 0;
+                    }
                 }
+                continue;
             }
-        }
-        for (int col = 0; col < VGA_WIDTH / 2; col++) {
-            vga[vga_row * VGA_WIDTH + (col + VGA_WIDTH / 2)] = screens[1].buffer[buffer_index + col] | VGA_DEFAULT_COLOR;
-            if (current == &screens[1]) {
-                int cursor_linear = current->row * VGA_WIDTH + current->col;
-                if ((buffer_index + col) == cursor_linear) {
-                    screens[1].row_half = vga_row;
-                    screens[1].col_half = col;
-                }
+            if (r >= VGA_HEIGHT)
+                break;
+            if (c >= scr->col_max) {
+                r++;
+                c = 0;
             }
+            int vga_col = scr->col_start + c;
+            vga[r * VGA_WIDTH + vga_col] =
+                (uint16_t)ch | VGA_DEFAULT_COLOR;
+            if (scr == current &&
+                i == current->row * VGA_WIDTH + current->col) {
+                scr->row_half = r;
+                scr->col_half = c;
+            }
+            c++;
         }
-        buffer_index += VGA_WIDTH / 2;
     }
+
     move_cursor_half();
 }
 

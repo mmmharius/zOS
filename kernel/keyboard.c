@@ -50,14 +50,51 @@ char    scancode_to_ascii(unsigned char sc) {
     }
 }
 
+void    handle_backslach() { 
+    current->buffer[current->row * VGA_WIDTH + current->col] = '\n';
+    current->col = current->col_start;
+    current->row++;
+    check_col();
+    move_cursor();
+}
+
+void    handle_half_backspace() {
+    volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
+
+    if (current->col_half + current->col_start > current->col_start) {
+        current->col_half--;
+        current->col--;
+        vga[current->row_half * VGA_WIDTH + (current->col_half + current->col_start)] = ' ' | VGA_DEFAULT_COLOR;
+        current->buffer[current->row * VGA_WIDTH + current->col] = ' ';
+        #ifdef DEBUG
+            printk(1, "here\n");
+        #endif
+    }
+    else if (current->row_half > current->row_start) {
+        current->row--;
+        current->col = current->col_start;
+        for (int col = 79; col >= 0; col--) {
+            char ch = vga[current->row * VGA_WIDTH + col] & 0x00FF;
+            if (ch != ' ' && ch != 0) {
+                current->col = col + 1;
+                break;
+            }
+        }
+    }
+    move_cursor();
+}
+
 void handle_backspace() {
+    if (HALF_SCREEN)
+        return handle_half_backspace();
     volatile uint16_t* vga = (uint16_t*)VGA_ADDR;
 
     if (current->col > 0) {
         current->col--;
         vga[current->row * VGA_WIDTH + current->col] = ' ' | VGA_DEFAULT_COLOR;
+        current->buffer[current->row * VGA_WIDTH + current->col] = ' ';
     } 
-    else if (current->row > START_PRINT) {
+    else if (current->row > current->row_start) {
         current->row--;
         current->col = current->col_start;
         for (int col = 79; col >= 0; col--) {
@@ -75,12 +112,8 @@ void    print_keyboard(char c) {
     #ifdef DEBUG
         printk(1, "print_keyboard call\n");
     #endif
-    if (c == '\n') {
-        current->buffer[current->row * VGA_WIDTH + current->col] = '\n';
-        current->col = current->col_start;
-        current->row++;
-        check_col();
-    }
+    if (c == '\n')
+        handle_backslach();
     else if (c == '\b')
         handle_backspace();
     else
@@ -88,7 +121,7 @@ void    print_keyboard(char c) {
     move_cursor();
     // #ifdef DEBUG
     //     int id = current - screens;
-    //     printk(1, "STRUCT\nscreen:%d\nstart_print:%d\nrow:%d\ncol:%d\nscroll:%d\n\n\n", id, START_PRINT, current->row, current->col, current->scroll);
+    //     printk(1, "STRUCT\nscreen:%d\nstart_print:%d\nrow:%d\ncol:%d\nscroll:%d\n\n\n", id, current->row_start, current->row, current->col, current->scroll);
     // #endif
 }
 
