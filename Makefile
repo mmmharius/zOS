@@ -10,7 +10,9 @@ LIBASM = $(LIBASM_DIR)/libasm.a
 PRINTK_DIR = include/printk
 PRINTK_LIB = $(PRINTK_DIR)/printk.a
 
-SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen.c kernel/init.c
+SRCS = kernel/kernel.c kernel/keyboard.c kernel/screen/screen_core.c \
+	   kernel/screen/screen_display.c kernel/screen/screen_io.c \
+	   kernel/screen/screen_utils.c 
 OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 DEBUG_SRCS = $(SRCS) kernel/debug.c

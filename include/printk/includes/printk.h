@@ -5,6 +5,7 @@
 #include <io.h>
 #include <screen.h>
 #include <stdint.h>
+#include <init.h>
 
 #define COM1 0x3F8
 
