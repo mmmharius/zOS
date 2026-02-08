@@ -1,14 +1,13 @@
 #include <keyboard.h>
 #include <screen.h>
 #include <printk.h>
-#include <init.h>
 
 #ifdef DEBUG
     #include "debug.h"
 #endif
 
 int main() {
-    init();
+    screen_init();
     
 #ifdef DEBUG
     printk(0, "DEBUG VERSION ZZZZZ   OOO   SSSS  DEBUG VERSION\n");
