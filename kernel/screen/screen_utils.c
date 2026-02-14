@@ -1,12 +1,21 @@
 #include <screen.h>
 #include <io.h>
+#ifdef DEBUG
+    #include <printk.h>
+    #include <debug.h>
+#endif
 
 int get_width() {
     return (mode_split) ? VGA_WIDTH / 2 : VGA_WIDTH;
 }
 
 int get_vga_pos(int screen_id, int row, int col) {
-    if (mode_split) return row * VGA_WIDTH + col + (screen_id * VGA_WIDTH / 2);
+    if (mode_split) {
+        int offset = 0;
+        if (screen_id == (current_split + 1) % NB_SCREEN)
+            offset = VGA_WIDTH / 2;
+        return row * VGA_WIDTH + col + offset;
+    }
     return row * VGA_WIDTH + col;
 }
 
@@ -19,6 +28,10 @@ void update_cursor() {
     outb(0x3D5, (uint8_t)(pos & 0xFF));
     outb(0x3D4, 0x0E); // 0x0E  = cursor high byte
     outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+    #ifdef DEBUG
+        printk(1, "curr_screen : %d, pos_row : %d, pos_col : %d\n", current_screen, s->row, s->col);
+        print_current_screen();
+    #endif
 }
 
 void replace_row(int row, int id) {

@@ -8,7 +8,8 @@
 #include <io.h>
 #include <printk.h>
 
-void    print_screen_struct();
-void    print_current_struct();
+void    print_all_screen();
+void    print_current_screen();
+void    print_screen(int id);
 
 #endif

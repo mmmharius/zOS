@@ -1,6 +1,9 @@
 #include <screen.h>
 #include <color.h>
 #include <io.h>
+#ifdef DEBUG
+    #include <printk.h>
+#endif
 
 void    screen_putchar(char c) {
     screen_t *s = &screens[current_screen];
