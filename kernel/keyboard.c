@@ -2,6 +2,9 @@
 #include <screen.h>
 #include <stdint.h>
 #include <io.h>
+#ifdef DEBUG
+    #include <printk.h>
+#endif
 
 unsigned char read_keyboard() {
     while ((inb(KB_STATUS) & 1) == 0);
@@ -53,7 +56,18 @@ void keyboard_loop() {
             continue;
         
         if (key == KEY_TAB) {
-            screen_switch((current_screen + 1) % NB_SCREEN);
+            if (mode_split) {
+                int other = (current_split + 1) % NB_SCREEN;
+        
+                if (current_screen == current_split)
+                    current_screen = other;
+                else
+                    current_screen = current_split;
+                // split_refresh(current_split, (current_split + 1) % NB_SCREEN);
+                update_cursor();
+            }
+            else
+                screen_switch((current_screen + 1) % NB_SCREEN);
             continue;
         }
         

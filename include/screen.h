@@ -18,6 +18,7 @@ typedef struct {
 extern screen_t screens[NB_SCREEN];
 extern int      current_screen;
 extern int      mode_split;
+extern int      current_split;
 
 void    screen_init();
 void    screen_switch(int id);
