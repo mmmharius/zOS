@@ -25,6 +25,9 @@ all: kernel.bin
 corr: CFLAGS += -DCORR
 corr: $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM)
 	$(LD) $(LDFLAGS) -o kernel.bin $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM)
+	mv kernel.bin isodir/boot/
+	grub-mkrescue -o zOS.iso isodir
+	qemu-system-i386 -cdrom zOS.iso -serial stdio
 
 debug: CFLAGS += -DDEBUG
 debug: $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(LIBASM)

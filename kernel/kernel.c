@@ -9,8 +9,8 @@ int main() {
     screen_init();
 
 #ifdef CORR
-    printk(0, "42");
-#ifdef DEBUG
+    printk(0, "42\n");
+#elif defined(DEBUG)
     printk(0, "DEBUG VERSION ZZZZZ   OOO   SSSS  DEBUG VERSION\n");
     printk(0, "DEBUG VERSION    Z   O   O  S     DEBUG VERSION\n");
     printk(0, "DEBUG VERSION   Z    O   O   SSS  DEBUG VERSION\n");
@@ -23,7 +23,6 @@ int main() {
     printk(0, "  Z    O   O   SSS \n");
     printk(0, " Z     O   O      S\n");
     printk(0, "ZZZZZ   OOO   SSSSS\n");
-    
 #endif
     keyboard_loop();
     while(1);
