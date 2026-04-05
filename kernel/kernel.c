@@ -7,7 +7,9 @@
 
 int main() {
     screen_init();
-    
+
+#ifdef CORR
+    printk(0, "42");
 #ifdef DEBUG
     printk(0, "DEBUG VERSION ZZZZZ   OOO   SSSS  DEBUG VERSION\n");
     printk(0, "DEBUG VERSION    Z   O   O  S     DEBUG VERSION\n");

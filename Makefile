@@ -22,6 +22,10 @@ DEBUG_OBJS = $(patsubst %.c,$(DEBUG_OBJ_DIR)/%.o,$(DEBUG_SRCS))
 
 all: kernel.bin
 
+corr: CFLAGS += -DCORR
+corr: $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM)
+	$(LD) $(LDFLAGS) -o kernel.bin $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM)
+
 debug: CFLAGS += -DDEBUG
 debug: $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(LIBASM)
 	$(MAKE) -C $(PRINTK_DIR) fclean
@@ -82,4 +86,4 @@ re: fclean all
 
 FORCE:
 
-.PHONY: all debug iso run clean fclean re FORCE
+.PHONY: all corr debug iso run clean fclean re FORCE
