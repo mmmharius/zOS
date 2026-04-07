@@ -1,0 +1,3 @@
+[submodule "include/include/libasm_zOs"]
+	path = include/include/libasm_zOs
+	url = https://github.com/mmmharius/libasm_zOs.git
