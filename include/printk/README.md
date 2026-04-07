@@ -1,124 +1,85 @@
-# include/printk/ — formatted output library
+# include/printk/
 
-`printk` is a `printf`-style output function for the kernel.
-It supports writing to VGA (screen), serial port (COM1), or the debug screen.
-
-Builds into `printk.a`, linked into every kernel binary.
-
----
-
-## Files
+Builds into `printk.a`.
 
 ```
-includes/
-  printk.h       declarations + output destination constants
-src/
-  printk.c       main printk(), format dispatch, character/string output
-  ft_puthex.c    %x / %X  — hex formatting
-  ft_putnbr.c    %d / %i  — signed decimal
-  ft_putnsigned.c  %u     — unsigned decimal
-  ft_putptr.c    %p       — pointer (0x... format)
+includes/printk.h    constantes + déclarations
+src/printk.c         printk(), dispatch formats, ft_kputchar, ft_putstr
+src/ft_puthex.c      %x / %X
+src/ft_putnbr.c      %d / %i
+src/ft_putnsigned.c  %u
+src/ft_putptr.c      %p
 ```
 
 ---
 
-## Output destinations
+## Destinations
 
 ```c
-// includes/printk.h
-#define VGA    0    // write to the currently active screen (scr.current)
-#define SERIAL 1    // write to COM1 serial port (0x3F8)
-#define DBG    2    // write to screen 2 (debug screen), DEBUG build only
-```
-
-Usage:
-```c
-printk(VGA,    "hello %s\n", name);     // → active screen
-printk(SERIAL, "error: %d\n", code);   // → serial console (QEMU stdio)
-printk(DBG,    "[state] row=%d\n", r); // → debug screen (DEBUG only)
+#define VGA    0   // screen actif (scr.current)
+#define SERIAL 1   // COM1 — 0x3F8
+#define DBG    2   // screen 2 (DEBUG only)
 ```
 
 ---
 
-## How printk works
+## printk
 
 ```c
-int printk(int output, const char *str, ...) {
-    uint32_t *args = (uint32_t *)(&str + 1);   // args start right after str on stack
+int printk(int output, const char *str, ...)
+```
 
-    for (int i = 0; str[i]; i++) {
-        if (str[i] == '%') {
-            ft_formats(args, str[i + 1], output);
-            args++;
-            i++;
-        } else {
-            ft_kputchar(str[i], output);
-        }
-    }
+Pas de `va_list`. Les args sont lus directement sur la stack :
+
+```c
+uint32_t *args = (uint32_t *)(&str + 1);
+```
+
+Fonctionne parce que le kernel est compilé en 32-bit cdecl (`-m32`) :
+tous les args sont sur la stack dans l'ordre, `&str + 1` pointe sur le premier.
+
+### Formats supportés
+
+```
+%c   ft_kputchar
+%s   ft_putstr
+%d   ft_putnbr     (signed)
+%i   ft_putnbr
+%u   ft_putnsigned (unsigned)
+%x   ft_puthex     (hex lowercase)
+%X   ft_puthex     (hex uppercase)
+%p   ft_putptr     (0x + 8 chiffres hex)
+%%   '%'
+```
+
+---
+
+## ft_kputchar
+
+```c
+if (output == SERIAL) {
+    while ((inb(COM1 + 5) & 0x20) == 0);  // attendre TX empty
+    outb(COM1, c);
 }
+else if (output == DBG)   screen_putchar(c, DEBUG_SCREEN_ID);
+else                      screen_putchar(c, scr.current);
 ```
 
-There is no `va_list` — arguments are read directly from the stack using
-a pointer cast. This works because the kernel is compiled as 32-bit cdecl
-(`-m32`), where all arguments are pushed onto the stack in order.
-In 32-bit cdecl, `&str + 1` points exactly to the first variadic argument.
-
-This would not work in 64-bit code (where args go in registers first).
-
-### Format specifiers
-
-```
-%c   single character                  ft_kputchar
-%s   null-terminated string            ft_putstr
-%d   signed decimal integer            ft_putnbr
-%i   same as %d
-%u   unsigned decimal integer          ft_putnsigned
-%x   hex lowercase                     ft_puthex
-%X   hex uppercase                     ft_puthex
-%p   pointer  (0x + 8 hex digits)      ft_putptr
-%%   literal percent sign
-```
+`COM1 + 5` = `0x3FD` = Line Status Register. Bit 5 = transmitter empty.
 
 ---
 
-## Output routing — ft_kputchar
-
-```c
-int ft_kputchar(uint8_t c, int output) {
-    if (output == SERIAL) {
-        while ((inb(COM1 + 5) & 0x20) == 0);  // wait: transmitter empty
-        outb(COM1, c);
-        return 1;
-    }
-    #ifdef DEBUG
-    if (output == DBG) {
-        screen_putchar(c, DEBUG_SCREEN_ID);    // screen 2
-        return 1;
-    }
-    #endif
-    screen_putchar(c, scr.current);            // active screen
-    return 1;
-}
-```
-
-### Why the serial wait loop ?
-
-`COM1 + 5 = 0x3FD` is the Line Status Register of the UART.
-Bit 5 (0x20) = "transmitter holding register empty" = safe to send a byte.
-
-If we write before the previous byte is sent, it gets silently dropped.
+## Registres COM1 (base 0x3F8)
 
 ```
-COM1 serial port registers (base = 0x3F8):
-
-  +0  Data Register          read/write a byte
-  +1  Interrupt Enable Reg   (we don't use interrupts)
-  +2  Interrupt ID Reg
-  +3  Line Control Reg
-  +4  Modem Control Reg
-  +5  Line Status Reg        bit 5 = TX empty ← we check this
-  +6  Modem Status Reg
-  +7  Scratch Reg
++0  Data Register
++1  Interrupt Enable Reg
++2  Interrupt ID Reg
++3  Line Control Reg
++4  Modem Control Reg
++5  Line Status Reg    ← bit 5 : TX empty
++6  Modem Status Reg
++7  Scratch Reg
 ```
 
 ---
@@ -126,16 +87,8 @@ COM1 serial port registers (base = 0x3F8):
 ## Build
 
 ```sh
-# from include/printk/
-make          # builds printk.a
-make clean
-make fclean
-make re
-
-# debug build (enables DBG output path):
-make EXTRA_CFLAGS=-DDEBUG
+make                        # → printk.a
+make EXTRA_CFLAGS=-DDEBUG   # active le path DBG
 ```
 
-The main `Makefile` handles this automatically — `make debug` passes
-`EXTRA_CFLAGS=-DDEBUG` when building the printk sub-library.
-
+Géré automatiquement par le Makefile principal.

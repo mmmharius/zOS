@@ -5,7 +5,7 @@ SECTIONS
 {
     . = 1M;                         /* kernel load at 1MB (GRUB requirement) */
 
-    .multiboot : { *(.multiboot) }  /* multiboot first (need to be in first 8192bit of kernel) */
+    .multiboot : { *(.multiboot) }  /* multiboot first (must be in first 8192 bytes of kernel) */
 
     .text : { *(.text) }            /* code section (rx) */
 
