@@ -17,9 +17,12 @@ OBJS           = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEBUG_OBJS     = $(patsubst %.c,$(DEBUG_OBJ_DIR)/%.o,$(DEBUG_SRCS))
 
 LIBASM_DIR     = libasm_zOs
-LIBASM         = $(LIBASM_DIR)/libasm_zOs.a
+LIBASM_LIB     = $(LIBASM_DIR)/libasm_zOs.a
 PRINTK_DIR     = printk_zOs
 PRINTK_LIB     = $(PRINTK_DIR)/printk_zOs.a
+
+CLEAN_TARGETS  = $(OBJ_DIR) isodir/boot/kernel.bin
+FCLEAN_TARGETS = $(OBJ_DIR) isodir/boot/kernel.bin kernel.bin zOs.iso
 
 GREEN  = \033[0;32m
 RED    = \033[0;31m
@@ -40,15 +43,16 @@ endef
 
 define del_path
 	@if [ -e "$(1)" ]; then \
-		printf "  $(BLUE)->$(RESET) $(RESET)%-40s$(RESET) $(RED)[DELETED]$(RESET)\n" "$(1)"; \
+		printf "  $(BLUE)->$(RESET) %-40s $(RED)[DELETED]$(RESET)\n" "$(1)"; \
 		rm -rf "$(1)"; \
+		touch /tmp/zos_cleaned; \
 	fi
 endef
 
 check_submodules:
-	@if [ ! -f printk_zOs/printk.h ]; then \
-		@printf "\n$(RED)$(BOLD)Submodules printk_zOs or libasm_zOs not here"; \
-		@printf "\n$(BLUE)$(BOLD)Initializing submodules...\n"; \
+	@if [ ! -e printk_zOs/.git ] || [ ! -e libasm_zOs/.git ]; then \
+		printf "\n$(RED)$(BOLD)Submodules printk_zOs or libasm_zOs not here$(RESET)\n"; \
+		printf "\n$(BLUE)Initializing submodules...\n$(RESET)"; \
 		git submodule update --init --recursive; \
 	fi
 
@@ -56,11 +60,11 @@ all: check_submodules banner kernel.bin
 	@printf "\n $(GREEN)$(BOLD)Build complete$(RESET) $(GREEN)[OK]$(RESET)\n\n"
 
 banner:
-	@printf "\n$(BLUE)$(BOLD)                 zOs build system$(RESET)\n\n"
+	@printf "\n$(BLUE)$(BOLD)                 zOs build system$(RESET)\n"
 	@printf "\n$(BLUE)-----------------------------------------------------\n"
 
 clean_banner:
-	@printf "\n$(BLUE)$(BOLD)                 zOs clean system$(RESET)\n\n"
+	@printf "\n$(BLUE)$(BOLD)                 zOs clean system$(RESET)\n"
 	@printf "\n$(BLUE)-----------------------------------------------------\n"
 
 fclean_banner:
@@ -88,14 +92,14 @@ $(DEBUG_OBJ_DIR)/%.o: %.c | $(DEBUG_OBJ_DIR)
 	@mkdir -p $(dir $@)
 	$(call run_cmd,$(CC) $(CFLAGS) -c $< -o $@,cc     $<)
 
-$(LIBASM): FORCE
+$(LIBASM_LIB): FORCE
 	@$(MAKE) -s -C $(LIBASM_DIR)
 
 $(PRINTK_LIB): FORCE
 	@$(MAKE) -s -C $(PRINTK_DIR)
 
-kernel.bin: $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM)
-	$(call run_cmd,$(LD) $(LDFLAGS) -o $@ $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM),link   kernel.bin)
+kernel.bin: $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM_LIB)
+	$(call run_cmd,$(LD) $(LDFLAGS) -o $@ $(OBJ_DIR)/boot.o $(OBJS) $(PRINTK_LIB) $(LIBASM_LIB),link   kernel.bin)
 
 iso: kernel.bin
 	@mv kernel.bin isodir/boot/
@@ -111,30 +115,48 @@ corr: all iso
 	@qemu-system-i386 -cdrom zOs.iso -serial stdio
 
 debug: CFLAGS += -DDEBUG
-debug: $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(LIBASM)
+debug: $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(LIBASM_LIB)
 	@$(MAKE) -s -C $(PRINTK_DIR) fclean
 	@$(MAKE) -s -C $(PRINTK_DIR) EXTRA_CFLAGS=-DDEBUG
-	$(call run_cmd,$(LD) $(LDFLAGS) -o kernel.bin $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM),link   kernel.bin)
+	$(call run_cmd,$(LD) $(LDFLAGS) -o kernel.bin $(DEBUG_OBJ_DIR)/boot.o $(DEBUG_OBJS) $(PRINTK_LIB) $(LIBASM_LIB),link   kernel.bin)
 	@mv kernel.bin isodir/boot/
 	$(call run_cmd,grub-mkrescue -o zOs.iso isodir,iso    zOs.iso)
 	@printf "\n $(BLUE)$(BOLD)Booting zOs (DEBUG)...$(RESET)\n\n"
 	@qemu-system-i386 -cdrom zOs.iso -serial stdio
 
 clean: clean_banner
-	$(call del_path,$(OBJ_DIR))
-	$(call del_path,isodir/boot/kernel.bin)
-	@$(MAKE) -s -C $(LIBASM_DIR) clean
-	@$(MAKE) -s -C $(PRINTK_DIR) clean
-	@printf "\n $(GREEN)$(BOLD)repo clean$(RESET) $(GREEN)[OK]$(RESET)\n"
+	@cleaned=0; \
+	for f in $(CLEAN_TARGETS); do \
+		if [ -e "$$f" ]; then \
+			printf "  $(BLUE)->$(RESET) %-40s $(RED)[DELETED]$(RESET)\n" "$$f"; \
+			rm -rf "$$f"; \
+			cleaned=1; \
+		fi; \
+	done; \
+	$(MAKE) -s -C $(LIBASM_DIR) clean; \
+	$(MAKE) -s -C $(PRINTK_DIR) clean; \
+	if [ $$cleaned -eq 1 ]; then \
+		printf "\n $(GREEN)$(BOLD)repo clean$(RESET) $(GREEN)[OK]$(RESET)\n"; \
+	else \
+		printf "\n $(BLUE)$(BOLD)already clean$(RESET)\n"; \
+	fi
 
 fclean: fclean_banner
-	$(call del_path,$(OBJ_DIR))
-	$(call del_path,isodir/boot/kernel.bin)
-	$(call del_path,kernel.bin)
-	$(call del_path,zOs.iso)
-	@$(MAKE) -s -C $(LIBASM_DIR) fclean
-	@$(MAKE) -s -C $(PRINTK_DIR) fclean
-	@printf "\n $(GREEN)$(BOLD)repo clean$(RESET) $(GREEN)[OK]$(RESET)\n"
+	@cleaned=0; \
+	for f in $(FCLEAN_TARGETS); do \
+		if [ -e "$$f" ]; then \
+			printf "  $(BLUE)->$(RESET) %-40s $(RED)[DELETED]$(RESET)\n" "$$f"; \
+			rm -rf "$$f"; \
+			cleaned=1; \
+		fi; \
+	done; \
+	$(MAKE) -s -C $(LIBASM_DIR) fclean; \
+	$(MAKE) -s -C $(PRINTK_DIR) fclean; \
+	if [ $$cleaned -eq 1 ]; then \
+		printf "\n $(GREEN)$(BOLD)repo fclean$(RESET) $(GREEN)[OK]$(RESET)\n"; \
+	else \
+		printf "\n $(BLUE)$(BOLD)already clean$(RESET)\n"; \
+	fi
 
 re: fclean all
 
